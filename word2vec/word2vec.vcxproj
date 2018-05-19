@@ -138,7 +138,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -155,6 +155,7 @@
     <ClInclude Include="util.h" />
     <ClInclude Include="word2vec.h" />
     <ClInclude Include="word2vec_hs.h" />
+    <ClInclude Include="word2vec_ns.h" />
     <ClInclude Include="wordmgr.h" />
   </ItemGroup>
   <ItemGroup>
@@ -170,6 +171,7 @@
     <ClCompile Include="util.cpp" />
     <ClCompile Include="word2vec.cpp" />
     <ClCompile Include="word2vec_hs.cpp" />
+    <ClCompile Include="word2vec_ns.cpp" />
     <ClCompile Include="wordmgr.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

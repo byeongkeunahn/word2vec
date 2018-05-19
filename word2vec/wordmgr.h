@@ -47,6 +47,7 @@ public:
     std::vector<std::string> _src_word_dict;
     std::vector<int> _src_word_freq;
     std::vector<int> _src_words;
+    std::vector<int> _src_negative_unigram_3_4;
 
     int _next_idx;
 

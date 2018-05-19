@@ -1,5 +1,7 @@
 
 #include "stdafx.h"
+
+#if 1
 #include "wordmgr.h"
 
 
@@ -60,8 +62,10 @@ static void do_it(const wchar_t *path) {
     }
 
     // step 4: save
-    std::wstring subs_corpus_path = std::wstring(path) + L".corpus.subs";
+    std::wstring subs_corpus_path = std::wstring(path) + L".subs.corpus";
     fp = _wfopen(subs_corpus_path.c_str(), L"wb");
+    long long new_word_count = 0;
+    fwrite(&new_word_count, 8, 1, fp);
 
     std::mt19937::result_type seed = (unsigned int)tick64();
     long long tinv = 100000;
@@ -78,6 +82,7 @@ static void do_it(const wchar_t *path) {
         long long rand_val = rand();
         bool drop = rand_val < save_threshold;
         if (!drop) {
+            new_word_count++;
             *ptr++ = word_idx;
             //fwrite(&word_idx, 4, 1, fp);
             if (ptr - buf == ccbuf) {
@@ -87,10 +92,14 @@ static void do_it(const wchar_t *path) {
         }
     }
     fwrite(buf, 4, ptr - buf, fp);
+    fseek(fp, 0, SEEK_SET);
+    fwrite(&new_word_count, 8, 1, fp);
     fclose(fp);
 }
 
 int main() {
-    do_it(L"D:\\Dev\\School\\word2vec_data\\wordset_large\\news.en-000.summary.v3");
+    //do_it(L"D:\\Dev\\School\\word2vec_data\\wordset_large\\news.en-000.summary.v3");
+    do_it(L"D:\\Dev\\School\\word2vec_data\\text8.bin");
     return 0;
 }
+#endif

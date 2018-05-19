@@ -88,6 +88,12 @@ void wordmgr::append(const char *word) {
 }
 
 void wordmgr::freeze() {
+    for (int i = 0; i < word_count(); i++) {
+        long long pwr_3_4 = (long long)pow(_src_word_freq[i], 0.75);
+        for (int j = 0; j < _src_word_freq[i]; j++) {
+            _src_negative_unigram_3_4.push_back(i);
+        }
+    }
     _frozen = true;
 }
 

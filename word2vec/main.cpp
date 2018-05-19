@@ -10,15 +10,30 @@
 //static const wchar_t *data_path = L"D:\\Dev\\School\\word2vec_data\\text8";
 //static const wchar_t *data_path = L"D:\\Dev\\School\\word2vec_data\\text8.processed";
 //static const wchar_t *data_path = L"D:\\Dev\\School\\word2vec_data\\wordset_large\\news.en-000.summary.processed.v2";
+
+#if 0
 static const wchar_t *data_path = L"D:\\Dev\\School\\word2vec_data\\wordset_large\\news.en-000.summary.v3";
 static const wchar_t *bin_data_path = L"D:\\Dev\\School\\word2vec_data\\wordset_large\\news.en-000.summary.v3";
+static const wchar_t *model_path = L"D:\\Dev\\School\\word2vec_data\\SG_HS_D=300,K=5.news.processed.v3";
+#endif
+
+#if 0
+static const wchar_t *data_path = L"D:\\Dev\\School\\word2vec_data\\text8";
+static const wchar_t *bin_data_path = L"D:\\Dev\\School\\word2vec_data\\text8.bin.subs";
+static const wchar_t *model_path = L"D:\\Dev\\School\\word2vec_data\\text8.bin.subs.SG-HS.D=300";
+#endif
+
+#if 1
+static const wchar_t *data_path = L"I:\\word2vec_data\\news.en-000.summary.v3.subs.try_1";
+static const wchar_t *bin_data_path = L"I:\\word2vec_data\\news.en-000.summary.v3.subs.try_1";
+static const wchar_t *model_path = L"I:\\word2vec_data\\news.en-000.summary.v3.D=5.model";
+#endif
 
 //static const wchar_t *model_path = L"D:\\Dev\\School\\word2vec_data\\SG_HS_D=300.NEWS.processed";
-static const wchar_t *test_path = L"D:\\Dev\\School\\word2vec_data\\questions-words-2.txt";
+static const wchar_t *test_path = L"I:\\word2vec_data\\questions-words-2.txt";
 //static const wchar_t *model_path = L"D:\\Dev\\School\\word2vec_data\\SG_HS_D=300,K=4.param-unprocessed-MT";
 //static const wchar_t *model_path = L"D:\\Dev\\School\\word2vec_data\\SG_HS_D=300,K=4.param-unprocessed-MT-SSE";
 //static const wchar_t *model_path = L"D:\\Dev\\School\\word2vec_data\\SG_HS_D=300,K=5.news.processed.v3";
-static const wchar_t *model_path = L"D:\\Dev\\School\\word2vec_data\\SG_HS_D=300,K=5.news.processed.v3";
 static const long long D = 300;
 //static const wchar_t *model_path = L"D:\\Dev\\School\\word2vec_data\\SG_HS_D=50.param";
 //static const long long D = 50;
@@ -222,14 +237,12 @@ void train() {
     printf("word count = %lld\n", wm.word_count());
     printf("corpus word count = %lld\n", wm.corpus_word_count());
 
-
-    const long long BATCH_SIZE = 4000;
-    //word_io_pair *trains = new word_io_pair[BATCH_SIZE];
     int *train_indices = new int[wm.corpus_word_count()];
     for (int i = 0; i < wm.corpus_word_count(); i++) {
         train_indices[i] = i;
     }
 
+    const long long BATCH_SIZE = 4000;
 
     long long last_save = tick64();
     for (long long i = 1; !ctrl_c; i++) {
@@ -237,18 +250,6 @@ void train() {
 
         std::random_device  rand_dev;
         std::mt19937        rand_generator(rand_dev());
-        /*
-        //long long ccTrain = wm.train_gen_sgd_batch(trains, K, BATCH_SIZE);
-        //float loss = w2v.step_momentum(trains, ccTrain);
-        float loss = w2v.step_skip_gram_sgd(wm, BATCH_SIZE);
-        printf("%lldth minibatch, loss = %.8f\n", i, loss);
-        if ((tick64() - last_save) / (double)tickfreq() >= 300) {
-            w2v.save(model_path);
-            last_save = tick64();
-        }
-        */
-        //long long ccTrain = wm.train_gen_all(trains);
-        //std::shuffle(trains, trains + ccTrain, rand_generator);
         long long ccTrain = wm.corpus_word_count();
         std::shuffle(train_indices, train_indices + ccTrain, rand_generator);
 
@@ -257,7 +258,8 @@ void train() {
             for (long long pos = start; pos < end && !ctrl_c; pos += BATCH_SIZE) {
                 long long ccBatch = std::min(BATCH_SIZE, end - pos);
                 long long tstart = tick64();
-                float loss = w2v.step_skip_gram(wm, train_indices + pos, ccBatch, worker_id);
+                //float loss = w2v.step_skip_gram(wm, train_indices + pos, ccBatch, worker_id);
+                float loss = w2v.step_cbow(wm, train_indices + pos, ccBatch, worker_id);
                 long long tend = tick64();
                 print++;
                 if (print % 10 == 0) {
@@ -267,7 +269,7 @@ void train() {
                 }
             }
         };
-        int num_thread = 6;
+        int num_thread = 4;
         std::vector<std::thread> threads;
         for (int i = 0; i < num_thread; i++) {
             long long start = ccTrain * i / num_thread;
@@ -279,33 +281,8 @@ void train() {
             threads[i].join();
         }
         Sleep(50);
-        /*
-        float actual_loss = 0;
-        long long ccTrainCumul = 0;
-        for (long long pos = 0; pos < ccTrain && !ctrl_c; pos += BATCH_SIZE) {
-            long long tick_start = tick64();
-
-            long long ccBatch = std::min(BATCH_SIZE, ccTrain - pos);
-            //float current_loss = w2v.step_momentum(trains + pos, ccBatch);
-            float current_loss = w2v.step_skip_gram(wm, train_indices + pos, ccBatch);
-            ccTrainCumul += ccBatch;
-            actual_loss += current_loss * ccBatch;
-
-            long long tick_end = tick64();
-            printf("pos = %lld, Minibatch = %.12f, Cumul = %.12f, time=%.3f ms\n",
-                pos, current_loss, actual_loss / ccTrainCumul, (tick_end - tick_start) * 1000 / (double)tickfreq());
-
-            if ((tick_end - last_save) / (double)tickfreq() >= 300) {
-                w2v.save(model_path);
-                last_save = tick64();
-            }
-        }
-        printf("Total loss = %.12f\n", actual_loss / ccTrainCumul);
-        */
     }
     w2v.save(model_path);
-
-    //delete[] trains;
     delete[] train_indices;
 }
 

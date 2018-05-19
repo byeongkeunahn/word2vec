@@ -39,6 +39,9 @@
     <ClInclude Include="random.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="word2vec_ns.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -63,6 +66,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="random.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="word2vec_ns.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>

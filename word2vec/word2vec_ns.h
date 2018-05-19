@@ -9,10 +9,10 @@ typedef enum {
     aio_random
 } alloc_init_options;
 
-class word2vec_hs {
+class word2vec_ns {
 public:
-    word2vec_hs();
-    ~word2vec_hs();
+    word2vec_ns();
+    ~word2vec_ns();
 
 public:
     void init(long long V, long long D, const int *freq_table);
@@ -48,9 +48,30 @@ private:
     }
     unsigned long long _rand_state;
 
+    void copy_W1(float *dst, long long idx) {
+        std::lock_guard<std::mutex> lock(W1_mutices[idx]);
+        memcpy(dst, _W1[idx], sizeof(float)*_D);
+    }
     void copy_W2(float *dst, long long idx) {
         std::lock_guard<std::mutex> lock(W2_mutices[idx]);
         memcpy(dst, _W2[idx], sizeof(float)*_D);
+    }
+    void obtain_negative_samples(wordmgr &wm, long long *buf, long long positive_sample, long long count, int thread_id = -1) {
+        for (long long i = 0; i < count; i++) {
+            long long rand_val;
+            if (thread_id != -1) {
+                rand_val = TLS[thread_id].random() % wm._src_negative_unigram_3_4.size();
+            }
+            else {
+                rand_val = random() % wm._src_negative_unigram_3_4.size();
+            }
+            long long new_neg_sample = wm._src_negative_unigram_3_4[rand_val];
+            if (new_neg_sample == positive_sample) {
+                i--;
+                continue;
+            }
+            buf[i] = new_neg_sample;
+        }
     }
 
 private:
@@ -59,14 +80,16 @@ private:
     long long _D;
     float _e;
     float **_W1; // [V][D]
-    float **_W2; // [V-1][D]
+    float **_W2; // [V][D]
     struct {
+        unsigned long long _tls_rand_state;
         float **W1_update;
         float **W2_update;
+        unsigned long long random() {
+            _tls_rand_state = _tls_rand_state * 0x5deece66dull + 0xb;
+            return _tls_rand_state;
+        }
     } TLS[32];
-
-    int *_node_tree;
-    bool *_parent_side; // am I left- or right- attached to the parent? (left=true, right=false)
 
     std::mutex *W1_mutices;
     std::mutex *W2_mutices;
