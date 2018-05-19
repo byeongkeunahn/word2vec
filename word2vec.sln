@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.27428.2043
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "word2vec", "word2vec.vcxproj", "{4F5BF467-4CAC-4A69-89DC-93039B7DBDAC}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "word2vec", "word2vec\word2vec.vcxproj", "{4F5BF467-4CAC-4A69-89DC-93039B7DBDAC}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "text_preprocessor", "text_preprocessor\text_preprocessor.vcxproj", "{05BE3FE3-979B-4920-9701-246BB86F8377}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,14 @@ Global
 		{4F5BF467-4CAC-4A69-89DC-93039B7DBDAC}.Release|x64.Build.0 = Release|x64
 		{4F5BF467-4CAC-4A69-89DC-93039B7DBDAC}.Release|x86.ActiveCfg = Release|Win32
 		{4F5BF467-4CAC-4A69-89DC-93039B7DBDAC}.Release|x86.Build.0 = Release|Win32
+		{05BE3FE3-979B-4920-9701-246BB86F8377}.Debug|x64.ActiveCfg = Debug|x64
+		{05BE3FE3-979B-4920-9701-246BB86F8377}.Debug|x64.Build.0 = Debug|x64
+		{05BE3FE3-979B-4920-9701-246BB86F8377}.Debug|x86.ActiveCfg = Debug|Win32
+		{05BE3FE3-979B-4920-9701-246BB86F8377}.Debug|x86.Build.0 = Debug|Win32
+		{05BE3FE3-979B-4920-9701-246BB86F8377}.Release|x64.ActiveCfg = Release|x64
+		{05BE3FE3-979B-4920-9701-246BB86F8377}.Release|x64.Build.0 = Release|x64
+		{05BE3FE3-979B-4920-9701-246BB86F8377}.Release|x86.ActiveCfg = Release|Win32
+		{05BE3FE3-979B-4920-9701-246BB86F8377}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

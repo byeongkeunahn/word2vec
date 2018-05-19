@@ -3,7 +3,7 @@
 
 #pragma pack(1)
 typedef struct {
-    double v[1];
+    float v[1];
 } my_vector;
 #pragma pack()
 
@@ -19,36 +19,36 @@ public:
     void destroy();
 
 public:
-    void set_learning_rate(double e);
+    void set_learning_rate(float e);
     // SGD, mini-batch or full-batch depending on ccTrain supplied
     // indices should be 0-based
     // returns current value of the loss function
-    double step(const long long *in, const long long *out, long long ccTrain);
+    float step(const long long *in, const long long *out, long long ccTrain);
 
 private:
-    void add_batch(double *dst, double *src, long long count, double mul);
+    void add_batch(float *dst, float *src, long long count, float mul);
 
 private:
     bool _is_init;
     long long _V;
     long long _D;
-    double _e;
-    double *_W1_transp; // V x D
-    double *_W2_transp; // D x V
-    double *_grad_W1_L;
-    double *_grad_W2_L;
+    float _e;
+    float *_W1_transp; // V x D
+    float *_W2_transp; // D x V
+    float *_grad_W1_L;
+    float *_grad_W2_L;
 
     // for convenient access
-    inline double& _W1(long long v, long long d) {
+    inline float& _W1(long long v, long long d) {
         return _W1_transp[d * _V + v];
     }
-    inline double& _W2(long long d, long long v) {
+    inline float& _W2(long long d, long long v) {
         return _W2_transp[v * _D + d];
     }
-    inline double& _W1_grad(long long v, long long d) {
+    inline float& _W1_grad(long long v, long long d) {
         return _grad_W1_L[d * _V + v];
     }
-    inline double& _W2_grad(long long d, long long v) {
+    inline float& _W2_grad(long long d, long long v) {
         return _grad_W2_L[v * _D + d];
     }
 };
