@@ -160,7 +160,9 @@
     </ClCompile>
     <ClCompile Include="main.cpp" />
     <ClCompile Include="subsample.cpp" />
+    <ClCompile Include="testinnerp.cpp" />
     <ClCompile Include="testm.cpp" />
+    <ClCompile Include="testsm.cpp" />
     <ClCompile Include="wordmgr.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -36,6 +36,7 @@ private:
     void fill_random(float *p, long long count);
     void add_batch(float *dst, float *src, long long count);
     void fmadd_batch(float *dst, float *src1, float *src2, long long count);
+    void fnmadd_batch(float *dst, float *src, float mul, long long count); // dst[i] -= src[i] * mul;
 
     unsigned long long random() {
         _rand_state = _rand_state * 0x5deece66dull + 0xb;

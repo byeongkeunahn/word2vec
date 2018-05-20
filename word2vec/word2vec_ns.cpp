@@ -140,10 +140,12 @@ float word2vec_ns::step_skip_gram(wordmgr &wm, const int *trains, long long ccTr
                 single_loss += -logf(a + 0.0000000000001f);
                 float tmp = (-1) * _e * sign * (1 - a);
                 // update W1 and W2 layer
-                for (int j = 0; j < _D; j++) {
-                    W1_update[j] -= W2_local[j] * tmp;
-                    W2_update[outi][j] -= hidden_layer[j] * tmp;
-                }
+                //for (int j = 0; j < _D; j++) {
+                //    W1_update[j] -= W2_local[j] * tmp;
+                //    W2_update[outi][j] -= hidden_layer[j] * tmp;
+                //}
+                fnmadd_batch(W1_update, W2_local, tmp, _D);
+                fnmadd_batch(W2_update[outi], hidden_layer, tmp, _D);
                 W2_dirty[outi] = true;
             }
         }
@@ -454,12 +456,11 @@ void word2vec_ns::add_batch(float *dst, float *src, long long count) {
     __m256 *dst256 = (__m256 *)dst;
     __m256 *src256 = (__m256 *)src;
     long long i;
-    long long end = count & ~7LL;
-    for (i = 0; i < end; i += 8) {
-        *dst256 = _mm256_add_ps(*dst256, *src256);
-        *src256++;
-        *dst256++;
+    long long end = count / 8;
+    for (i = 0; i < end; i++) {
+        dst256[i] = _mm256_add_ps(dst256[i], src256[i]);
     }
+    i <<= 3;
     for (; i < count; i++) {
         dst[i] += src[i];
     }
@@ -476,5 +477,23 @@ void word2vec_ns::fmadd_batch(float *dst, float *src1, float *src2, long long co
     }
     for (; i < count; i++) {
         dst[i] += src1[i] * src2[i];
+    }
+}
+void word2vec_ns::fnmadd_batch(float *dst, float *src, float mul, long long count) {
+    __m256 *dst256 = (__m256 *)dst;
+    __m256 *src256 = (__m256 *)src;
+    //mul = -mul;
+    __m256  mul256 = _mm256_broadcastss_ps(*(__m128 *)&mul);
+    long long i;
+    long long end = count / 8;
+    for (i = 0; i < end; i++) {
+        //__m256 tmp = _mm256_mul_ps(*src256++, mul256);
+        //*dst256 = _mm256_add_ps(*dst256, tmp);
+        //*dst256++;
+        dst256[i] = _mm256_fnmadd_ps(src256[i], mul256, dst256[i]);
+    }
+    i <<= 3;
+    for (; i < count; i++) {
+        dst[i] -= src[i] * mul;
     }
 }

@@ -1,7 +1,7 @@
 
 #include "stdafx.h"
 
-#if 1
+#if 0
 #include "wordmgr.h"
 
 
