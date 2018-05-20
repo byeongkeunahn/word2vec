@@ -49,21 +49,19 @@ float innerp_naive_unroll(float *v1, float *v2, long long count) {
 float innerp_sse(float *v1, float *v2, long long count) {
     __m256 *vv1 = (__m256 *)v1;
     __m256 *vv2 = (__m256 *)v2;
-    float innerp1 = 0;
-    float innerp2 = 0;
     long long i;
     long long end = count / 8;
+    __m256 p = _mm256_setzero_ps();
     for (i = 0; i < end; i++) {
-        __m256 c = _mm256_dp_ps(vv1[i], vv2[i], 0xff);
-        innerp1 += c.m256_f32[0];
-        innerp2 += c.m256_f32[4];
+        __m256 c = _mm256_dp_ps(vv1[i], vv2[i], 0x11);
+        p = _mm256_add_ps(p, c);
     }
     i <<= 3;
-    float innerp3 = 0;
+    float innerp = p.m256_f32[0] + p.m256_f32[4];
     for (; i < count; i++) {
-        innerp3 += v1[i] * v2[i];
+        innerp += v1[i] * v2[i];
     }
-    return innerp1 + innerp2 + innerp3;
+    return innerp;
 }
 
 void test() {
