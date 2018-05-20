@@ -5,7 +5,7 @@
 
 
 wordmgr::wordmgr() {
-    _next_idx = 0;
+    _next_word_idx = 0;
     _frozen = false;
 }
 wordmgr::~wordmgr() {
@@ -74,7 +74,7 @@ void wordmgr::append(const char *word) {
     std::string str(word);
     auto it = _src_dict.find(str);
     if (it == _src_dict.end()) {
-        int word_idx = _next_idx++;
+        int word_idx = _next_word_idx++;
         _src_words.push_back(word_idx);
         _src_word_freq.push_back(1);
         _src_word_dict.push_back(str);
@@ -109,90 +109,6 @@ long long wordmgr::corpus_word_count() {
     return _src_words.size();
 }
 
-void wordmgr::train_gen_init(int neighbors) {
-#ifdef _DEBUG
-    if (!this->is_frozen())
-        throw std::runtime_error(u8"wordmgr: train_gen_init: object is not frozen");
-#endif
-    _state.neighbors = neighbors;
-    _state.next_center = 0;
-    _state.next_offset = -neighbors;
-}
-
-long long wordmgr::train_gen(long long desired_count, word_io_pair *buf) {
-#ifdef _DEBUG
-    if (!this->is_frozen())
-        throw std::runtime_error(u8"wordmgr: train_gen: object is not frozen");
-#endif
-    long long count = 0;
-    while (count < desired_count) {
-        // try adding current example
-        int target_word = _state.next_center + _state.next_offset;
-        if (target_word >= 0 && target_word < corpus_word_count()) {
-            *buf++ = { _src_words[_state.next_center], _src_words[target_word] };
-            count++;
-        }
-        // advance to next example
-        _state.next_offset++;
-        if (!_state.next_offset) {
-            _state.next_offset++;
-        }
-        else if (_state.next_offset > _state.neighbors) {
-            _state.next_center++;
-            if (_state.next_center >= corpus_word_count()) {
-                break;
-            }
-            _state.next_offset = -(_state.neighbors);
-        }
-    }
-
-    return count;
-}
-
-long long wordmgr::train_gen_all(word_io_pair *buf) {
-    _state_type _state_backup = _state;
-    train_gen_init(_state.neighbors);
-    long long gen_count = train_gen(1LL << 48, buf);
-    _state = _state_backup;
-    return gen_count;
-}
-
-long long wordmgr::train_gen_sgd_batch(word_io_pair * buf, int K, long long desired_count) {
-    std::mt19937::result_type seed = (unsigned int)tick64();
-    auto rand = std::bind(std::uniform_int_distribution<long long>(0, this->corpus_word_count() - 1), std::mt19937(seed));
-    auto rand_window = std::bind(std::uniform_int_distribution<long long>(-K+1, K), std::mt19937(seed));
-    for (int i = 0; i < desired_count; i++) {
-        auto center_word = rand();
-        auto offset = rand_window();
-        if (offset <= 0) offset -= 1;
-        if (center_word + offset < 0 || center_word + offset >= this->corpus_word_count()) {
-            i--; continue;
-        }
-        *buf++ = { _src_words[center_word], _src_words[center_word + offset] };
-    }
-    return desired_count;
-}
-/*
-long long wordmgr::train_gen_skip_gram(te_skip_gram *buf, int K, long long desired_count) {
-    std::mt19937::result_type seed = (unsigned int)tick64();
-    auto rand_window_sz = std::bind(std::uniform_int_distribution<int>(1, K), std::mt19937(seed));
-    auto rand = std::bind(std::uniform_int_distribution<long long>(0, this->corpus_word_count() - 1), std::mt19937(seed));
-    for (int i = 0; i < desired_count; i++) {
-        auto out_window_sz = rand_window_sz();
-        auto center_word = 
-
-
-        auto center_word = rand();
-        auto offset = rand_window();
-        if (offset <= 0) offset -= 1;
-        if (center_word + offset < 0 || center_word + offset >= this->corpus_word_count()) {
-            i--; continue;
-        }
-        //*buf++ = { _src_words[center_word], _src_words[center_word + offset] };
-    }
-    return desired_count;
-}
-*/
 int wordmgr::word_to_index(const char *word) const {
 #ifdef _DEBUG
     if (!this->is_frozen())
@@ -216,3 +132,30 @@ std::string wordmgr::index_to_word(int idx) const {
     throw std::runtime_error(u8"wordmgr: index_to_word: idx out of range");
 }
 
+void wordmgr::subsample_new() {
+    _src_words_subsampled.clear();
+
+    long long stored_word_count = _src_words.size();
+    std::mt19937::result_type seed = (unsigned int)tick64();
+    double t = 0.00001;
+    long long rand_max = 1 << 30;
+    auto rand = std::bind(std::uniform_int_distribution<long long>(0, rand_max - 1), std::mt19937(seed));
+
+    int ccbuf = 10000000;
+    int *buf = new int[ccbuf];
+    int *ptr = buf;
+    for (int i = 0; i < stored_word_count; i++) {
+        int word_idx = _src_words[i];
+        double f = _src_word_freq[word_idx] / (double)stored_word_count;
+        double keep_prob = sqrt(t / f) + t / f;
+        long long rand_val = rand();
+        bool keep = rand_val < (rand_max * keep_prob);
+        if (t / f >= 0.38254554) keep = true;
+        if (keep) {
+            _src_words_subsampled.push_back(word_idx);
+        }
+    }
+}
+long long wordmgr::subsampled_corpus_word_count() {
+    return _src_words_subsampled.size();
+}

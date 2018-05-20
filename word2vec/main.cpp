@@ -6,6 +6,7 @@
 #include "wordmgr.h"
 #include "word2vec.h"
 #include "word2vec_hs.h"
+#include "word2vec_ns.h"
 
 //static const wchar_t *data_path = L"D:\\Dev\\School\\word2vec_data\\text8";
 //static const wchar_t *data_path = L"D:\\Dev\\School\\word2vec_data\\text8.processed";
@@ -18,19 +19,39 @@ static const wchar_t *model_path = L"D:\\Dev\\School\\word2vec_data\\SG_HS_D=300
 #endif
 
 #if 0
+static const wchar_t *data_path = L"D:\\Dev\\School\\word2vec_data\\wordset_large\\news.en-000.summary.v3";
+static const wchar_t *bin_data_path = L"D:\\Dev\\School\\word2vec_data\\wordset_large\\news.en-000.summary.v3";
+static const wchar_t *model_path = L"D:\\Dev\\School\\word2vec_data\\CBOW_HS_D=300,K=5.news.processed.v3";
+#endif
+
+#if 1
+static const wchar_t *data_path = L"D:\\Dev\\School\\word2vec_data\\wordset_large\\news.en-000.summary.v3";
+static const wchar_t *bin_data_path = L"D:\\Dev\\School\\word2vec_data\\wordset_large\\news.en-000.summary.v3";
+static const wchar_t *model_path = L"D:\\Dev\\School\\word2vec_data\\SG_NS_D=300,K=5.news.processed.v3";
+#endif
+
+#if 0
 static const wchar_t *data_path = L"D:\\Dev\\School\\word2vec_data\\text8";
 static const wchar_t *bin_data_path = L"D:\\Dev\\School\\word2vec_data\\text8.bin.subs";
 static const wchar_t *model_path = L"D:\\Dev\\School\\word2vec_data\\text8.bin.subs.SG-HS.D=300";
 #endif
 
-#if 1
-static const wchar_t *data_path = L"I:\\word2vec_data\\news.en-000.summary.v3.subs.try_1";
-static const wchar_t *bin_data_path = L"I:\\word2vec_data\\news.en-000.summary.v3.subs.try_1";
+#if 0
+static const wchar_t *data_path = L"I:\\word2vec_data\\news.en-000.summary.v3";
+static const wchar_t *bin_data_path = L"I:\\word2vec_data\\news.en-000.summary.v3";
 static const wchar_t *model_path = L"I:\\word2vec_data\\news.en-000.summary.v3.D=5.model";
 #endif
 
+
+#if 0
+static const wchar_t *data_path = L"I:\\word2vec_data\\news.en-000.summary.v3";
+static const wchar_t *bin_data_path = L"I:\\word2vec_data\\news.en-000.summary.v3";
+static const wchar_t *model_path = L"I:\\word2vec_data\\news.en-000.summary.v3.D=5.model.CBOW-NS";
+#endif
+
 //static const wchar_t *model_path = L"D:\\Dev\\School\\word2vec_data\\SG_HS_D=300.NEWS.processed";
-static const wchar_t *test_path = L"I:\\word2vec_data\\questions-words-2.txt";
+static const wchar_t *test_path = L"D:\\Dev\\School\\word2vec_data\\questions-words.txt";
+//static const wchar_t *test_path = L"I:\\word2vec_data\\questions-words-2.txt";
 //static const wchar_t *model_path = L"D:\\Dev\\School\\word2vec_data\\SG_HS_D=300,K=4.param-unprocessed-MT";
 //static const wchar_t *model_path = L"D:\\Dev\\School\\word2vec_data\\SG_HS_D=300,K=4.param-unprocessed-MT-SSE";
 //static const wchar_t *model_path = L"D:\\Dev\\School\\word2vec_data\\SG_HS_D=300,K=5.news.processed.v3";
@@ -44,7 +65,8 @@ static const long long D = 300;
 
 wordmgr wm;
 long long V;
-word2vec_hs w2v;
+//word2vec_hs w2v;
+word2vec_ns w2v;
 
 bool ctrl_c = false;
 BOOL WINAPI my_handler(DWORD dwCtrlType) {
@@ -238,9 +260,6 @@ void train() {
     printf("corpus word count = %lld\n", wm.corpus_word_count());
 
     int *train_indices = new int[wm.corpus_word_count()];
-    for (int i = 0; i < wm.corpus_word_count(); i++) {
-        train_indices[i] = i;
-    }
 
     const long long BATCH_SIZE = 4000;
 
@@ -250,7 +269,12 @@ void train() {
 
         std::random_device  rand_dev;
         std::mt19937        rand_generator(rand_dev());
-        long long ccTrain = wm.corpus_word_count();
+
+        wm.subsample_new();
+        long long ccTrain = wm.subsampled_corpus_word_count();
+        for (int i = 0; i < ccTrain; i++) {
+            train_indices[i] = i;
+        }
         std::shuffle(train_indices, train_indices + ccTrain, rand_generator);
 
         auto worker_func = [&](long long start, long long end, int worker_id) {
@@ -258,8 +282,8 @@ void train() {
             for (long long pos = start; pos < end && !ctrl_c; pos += BATCH_SIZE) {
                 long long ccBatch = std::min(BATCH_SIZE, end - pos);
                 long long tstart = tick64();
-                //float loss = w2v.step_skip_gram(wm, train_indices + pos, ccBatch, worker_id);
-                float loss = w2v.step_cbow(wm, train_indices + pos, ccBatch, worker_id);
+                float loss = w2v.step_skip_gram(wm, train_indices + pos, ccBatch, worker_id);
+                //float loss = w2v.step_cbow(wm, train_indices + pos, ccBatch, worker_id);
                 long long tend = tick64();
                 print++;
                 if (print % 10 == 0) {
@@ -269,7 +293,7 @@ void train() {
                 }
             }
         };
-        int num_thread = 4;
+        int num_thread = 6;
         std::vector<std::thread> threads;
         for (int i = 0; i < num_thread; i++) {
             long long start = ccTrain * i / num_thread;
@@ -280,9 +304,9 @@ void train() {
         for (int i = 0; i < num_thread; i++) {
             threads[i].join();
         }
+        w2v.save(model_path);
         Sleep(50);
     }
-    w2v.save(model_path);
     delete[] train_indices;
 }
 
@@ -311,6 +335,7 @@ int main() {
     SetConsoleCtrlHandler(my_handler, TRUE);
     //build_corpus(wm);
     wm.restore_from(bin_data_path);
+    wm.freeze();
     V = wm.word_count();
     w2v.init(V, D, &wm._src_word_freq[0]);
     w2v.set_learning_rate(0.001f);

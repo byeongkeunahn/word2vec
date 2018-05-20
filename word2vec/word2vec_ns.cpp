@@ -100,7 +100,7 @@ float word2vec_ns::step_skip_gram(wordmgr &wm, const int *trains, long long ccTr
     for (int _i = 0; _i < ccTrain; _i++) {
         // training example generation
         long long in_idx = trains[_i];
-        long long in = wm._src_words[in_idx];
+        long long in = wm._src_words_subsampled[in_idx];
         long long window_sz = 5;
 
         // forward propagation
@@ -109,10 +109,10 @@ float word2vec_ns::step_skip_gram(wordmgr &wm, const int *trains, long long ccTr
 
         float single_loss = 0;
         long long out_from = std::max(0LL, in_idx - window_sz);
-        long long out_to = std::min(wm.corpus_word_count() - 1, in_idx + window_sz);
+        long long out_to = std::min(wm.subsampled_corpus_word_count() - 1, in_idx + window_sz);
         for (long long out_idx = out_from; out_idx <= out_to; out_idx++) {
             if (out_idx == in_idx) continue;
-            long long out = wm._src_words[out_idx];
+            long long out = wm._src_words_subsampled[out_idx];
 
             const long long cc_neg_sample = 5;
             long long sample[1 + cc_neg_sample];
@@ -190,16 +190,16 @@ float word2vec_ns::step_cbow(wordmgr &wm, const int *trains, long long ccTrain, 
 
     for (int _i = 0; _i < ccTrain; _i++) {
         long long out_idx = trains[_i];
-        long long out = wm._src_words[out_idx];
+        long long out = wm._src_words_subsampled[out_idx];
         long long window_sz = 5;
 
         // forward propagation 1: hidden layer
         long long in_from = std::max(0LL, out_idx - window_sz);
-        long long in_to = std::min(wm.corpus_word_count() - 1, out_idx + window_sz);
+        long long in_to = std::min(wm.subsampled_corpus_word_count() - 1, out_idx + window_sz);
         memset(hidden_layer, 0, sizeof(float) * _D);
         for (long long in_idx = in_from; in_idx <= in_to; in_idx++) {
             if (out_idx == in_idx) continue;
-            long long in = wm._src_words[in_idx];
+            long long in = wm._src_words_subsampled[in_idx];
             std::lock_guard<std::mutex> lock(W1_mutices[in]);
             add_batch(hidden_layer, _W1[in], _D);
         }
@@ -245,7 +245,7 @@ float word2vec_ns::step_cbow(wordmgr &wm, const int *trains, long long ccTrain, 
         // backpropagation 2: W1 layer
         for (long long in_idx = in_from; in_idx <= in_to; in_idx++) {
             if (out_idx == in_idx) continue;
-            long long in = wm._src_words[in_idx];
+            long long in = wm._src_words_subsampled[in_idx];
             std::lock_guard<std::mutex> lock(W1_mutices[in]);
             add_batch(_W1[in], hidden_grad, _D);
         }

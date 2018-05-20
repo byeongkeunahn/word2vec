@@ -2,12 +2,7 @@
 #pragma once
 
 #include "wordmgr.h"
-
-typedef enum {
-    aio_none,
-    aio_zero,
-    aio_random
-} alloc_init_options;
+#include "word2vec_hs.h"
 
 class word2vec_ns {
 public:

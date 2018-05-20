@@ -62,14 +62,14 @@ static void do_it(const wchar_t *path) {
     }
 
     // step 4: save
-    std::wstring subs_corpus_path = std::wstring(path) + L".subs.corpus";
+    std::wstring subs_corpus_path = std::wstring(path) + L".subs.corpus2";
     fp = _wfopen(subs_corpus_path.c_str(), L"wb");
     long long new_word_count = 0;
     fwrite(&new_word_count, 8, 1, fp);
 
     std::mt19937::result_type seed = (unsigned int)tick64();
-    long long tinv = 100000;
-    long long rand_max = tinv * stored_word_count;
+    double t = 0.00001;
+    long long rand_max = 1 << 30;
     auto rand = std::bind(std::uniform_int_distribution<long long>(0, rand_max - 1), std::mt19937(seed));
 
     int ccbuf = 10000000;
@@ -77,11 +77,12 @@ static void do_it(const wchar_t *path) {
     int *ptr = buf;
     for (int i = 0; i < stored_word_count; i++) {
         int word_idx = _src_words[i];
-        long long Nf = stored_word_count * _src_word_freq[word_idx];
-        long long save_threshold = Nf - (long long)sqrt(Nf) - 1;
+        double f = _src_word_freq[word_idx] / (double)stored_word_count;
+        double keep_prob = sqrt(t / f) + t / f;
         long long rand_val = rand();
-        bool drop = rand_val < save_threshold;
-        if (!drop) {
+        bool keep = rand_val < (rand_max * keep_prob);
+        if (t / f >= 0.38254554) keep = true;
+        if (keep) {
             new_word_count++;
             *ptr++ = word_idx;
             //fwrite(&word_idx, 4, 1, fp);
@@ -98,8 +99,8 @@ static void do_it(const wchar_t *path) {
 }
 
 int main() {
-    //do_it(L"D:\\Dev\\School\\word2vec_data\\wordset_large\\news.en-000.summary.v3");
-    do_it(L"D:\\Dev\\School\\word2vec_data\\text8.bin");
+    do_it(L"D:\\Dev\\School\\word2vec_data\\wordset_large\\news.en-000.summary.v3");
+    //do_it(L"D:\\Dev\\School\\word2vec_data\\text8.bin");
     return 0;
 }
 #endif
